@@ -19,3 +19,19 @@ def validate_source(d):
 def validate_policy(d):
  if not isinstance(d,dict) or not isinstance(d.get('version'),str) or not 2<=len(d['version'])<=120: raise ValueError('口径版本名不合法')
  if not isinstance(d.get('definition'),str) or not d['definition']: raise ValueError('核算说明不能为空')
+def validate_line_plan(d):
+ if not isinstance(d,dict) or set(d)!={'name','stations','buffers','initial_wip'}: raise ValueError('方案字段必须为名称/工序顺序/缓冲容量/期初在制品')
+ if not isinstance(d['name'],str) or not 2<=len(d['name'])<=120: raise ValueError('方案名称需2-120字')
+ if not isinstance(d['stations'],list) or not 2<=len(d['stations'])<=12: raise ValueError('工序顺序需2-12站')
+ for sid in d['stations']:
+  if isinstance(sid,bool) or not isinstance(sid,int) or sid<1: raise ValueError('工序引用的底稿编号不合法')
+ if len(set(d['stations']))!=len(d['stations']): raise ValueError('同一底稿不可在串线中重复使用')
+ labels={'buffers':'缓冲容量','initial_wip':'期初在制品'}
+ for key in labels:
+  if not isinstance(d[key],list) or len(d[key])!=len(d['stations'])-1: raise ValueError(labels[key]+'数量需为工序数减一')
+  for v in d[key]: number(v,labels[key],integer=True)
+  if key=='buffers':
+   for v in d[key]:
+    if v>999: raise ValueError('单段缓冲容量不可超过999')
+ for j,w in enumerate(d['initial_wip']):
+  if w>d['buffers'][j]: raise ValueError('期初在制品不可超过对应缓冲容量')
